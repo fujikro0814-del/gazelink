@@ -1,0 +1,40 @@
+{
+  "name": "gazelink",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GazeLink: gaze-adaptive teleoperation simulator over a delayed network",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node server/index.ts --dev",
+    "build": "vite build && esbuild server/index.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=dist/server.mjs",
+    "start": "node dist/server.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
+    "@vitejs/plugin-react": "^6.1.1",
+    "esbuild": "^0.28.2",
+    "express": "^5.2.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "three": "^0.186.0",
+    "typescript": "^7.0.2",
+    "uplot": "^1.6.32",
+    "vite": "^8.3.0",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "@types/ws": "^8.18.1",
+    "playwright": "^1.63.0",
+    "vitest": "^5.0.1"
+  }
+}

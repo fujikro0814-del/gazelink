@@ -1,0 +1,72 @@
+:root {
+  --bg: #0d1117;
+  --panel: #151b23;
+  --panel-2: #1b222c;
+  --line: #2a3441;
+  --text: #d4dbe3;
+  --muted: #8593a3;
+  --accent: #4fc3f7;
+  --good: #7bd88f;
+  --warn: #ffc857;
+  --bad: #ff6b6b;
+  font-family: 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic UI', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.topbar {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.subtitle {
+  color: var(--muted);
+}
+
+.workspace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.scene {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
