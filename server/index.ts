@@ -17,6 +17,25 @@ async function main(): Promise<void> {
     res.json({ ok: true, time: Date.now() });
   });
 
+  // Short SSE stream used by the client's connectivity probe.
+  app.get('/api/sse-probe', (_req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+    let n = 0;
+    const timer = setInterval(() => {
+      res.write(`data: ${JSON.stringify({ n: n++, time: Date.now() })}\n\n`);
+      if (n >= 3) {
+        clearInterval(timer);
+        res.end();
+      }
+    }, 200);
+    res.on('close', () => clearInterval(timer));
+  });
+
   if (isDev) {
     const { createServer } = await import('vite');
     const vite = await createServer({ server: { middlewareMode: true }, appType: 'spa' });

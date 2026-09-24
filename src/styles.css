@@ -53,6 +53,36 @@ body,
   color: var(--muted);
 }
 
+.spacer {
+  flex: 1;
+}
+
+.badges {
+  display: flex;
+  gap: 6px;
+}
+
+.badge {
+  padding: 1px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.badge-pending {
+  color: var(--muted);
+}
+
+.badge-ok {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 45%, transparent);
+}
+
+.badge-fail {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 45%, transparent);
+}
+
 .workspace {
   flex: 1;
   min-height: 0;
