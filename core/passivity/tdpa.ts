@@ -1,5 +1,11 @@
 // Time-domain passivity observers / controllers for the delayed channel (docs/CONTROL.md §4.2),
 // after Ryu, Artigas & Preusche (2010).
+//
+// Both controllers only ever *shrink* this step's output toward zero: the energy they may emit in
+// a step is max(0, E_in_received - E_out_so_far). A deficit carried over from earlier (e.g., a
+// mode switch arriving before the energy counters are restarted) therefore stops the output
+// instead of being "repaid" with an unbounded correction, and the corrected velocity / force
+// never exceeds the uncorrected one.
 import type { Vec3 } from '../math/vec.ts';
 import { dot3 } from './energy.ts';
 
@@ -10,27 +16,28 @@ export interface SlavePcResult {
   vd: Vec3;
   /** energy removed by the PC in this step [J] */
   dissipated: number;
-  /** observer value after this step (>= 0 when the PC is active) */
+  /** observer value W = E_in - E_out after this step */
   observer: number;
 }
 
 /**
  * Slave-side admittance-type PC (series): the channel outputs velocity, receives force f_c.
  * Output power is f_c . v_d. If emitting v_ref would push the output energy above what arrived
- * from the master (eInRcvd), subtract beta * f_c so the observer lands exactly on zero.
+ * from the master (eInRcvd), subtract beta * f_c so the output lands exactly on the allowance.
  */
 export function slavePc(fc: Vec3, vRef: Vec3, eInRcvd: number, eOutPrev: number, dt: number): SlavePcResult {
-  const pOut = dot3(fc, vRef);
-  const w = eInRcvd - eOutPrev - Math.max(0, pOut) * dt;
+  const need = Math.max(0, dot3(fc, vRef)) * dt;
+  const allowance = Math.max(0, eInRcvd - eOutPrev);
   const f2 = dot3(fc, fc);
-  if (w >= 0 || f2 < EPS) {
-    return { vd: [vRef[0], vRef[1], vRef[2]], dissipated: 0, observer: w };
+  if (need <= allowance || f2 < EPS) {
+    return { vd: [vRef[0], vRef[1], vRef[2]], dissipated: 0, observer: eInRcvd - eOutPrev - need };
   }
-  const beta = -w / (dt * f2);
+  // beta * |f|^2 * dt = need - allowance  (0 < beta * |f|^2 <= f.v_ref, so |v_d . f| <= |v_ref . f|)
+  const beta = (need - allowance) / (dt * f2);
   return {
     vd: [vRef[0] - beta * fc[0], vRef[1] - beta * fc[1], vRef[2] - beta * fc[2]],
-    dissipated: -w,
-    observer: 0,
+    dissipated: need - allowance,
+    observer: eInRcvd - eOutPrev - allowance,
   };
 }
 
@@ -49,17 +56,17 @@ export interface MasterPcResult {
  * from the slave (eInRcvd), add damping -alpha * v_m.
  */
 export function masterPc(fRef: Vec3, vm: Vec3, eInRcvd: number, eOutPrev: number, dt: number): MasterPcResult {
-  const pOut = dot3(fRef, vm);
-  const w = eInRcvd - eOutPrev - Math.max(0, pOut) * dt;
+  const need = Math.max(0, dot3(fRef, vm)) * dt;
+  const allowance = Math.max(0, eInRcvd - eOutPrev);
   const v2 = dot3(vm, vm);
-  if (w >= 0 || v2 < EPS) {
-    return { fm: [fRef[0], fRef[1], fRef[2]], dissipated: 0, observer: w, alpha: 0 };
+  if (need <= allowance || v2 < EPS) {
+    return { fm: [fRef[0], fRef[1], fRef[2]], dissipated: 0, observer: eInRcvd - eOutPrev - need, alpha: 0 };
   }
-  const alpha = -w / (dt * v2);
+  const alpha = (need - allowance) / (dt * v2);
   return {
     fm: [fRef[0] - alpha * vm[0], fRef[1] - alpha * vm[1], fRef[2] - alpha * vm[2]],
-    dissipated: -w,
-    observer: 0,
+    dissipated: need - allowance,
+    observer: eInRcvd - eOutPrev - allowance,
     alpha,
   };
 }

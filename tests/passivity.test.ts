@@ -39,6 +39,20 @@ describe('TDPA controllers (one step)', () => {
     expect(r.alpha).toBeGreaterThan(0);
   });
 
+  it('a deficit carried over from earlier only stops the output, never reverses or amplifies it', () => {
+    // 98 J more out than in (e.g., "none" before a mode switch) and a tiny velocity
+    const fRef: Vec3 = [-80, 20, 0];
+    const vm: Vec3 = [-1e-3, 2e-4, 0];
+    const r = masterPc(fRef, vm, 0, 98, dt);
+    const out = r.fm[0] * vm[0] + r.fm[1] * vm[1] + r.fm[2] * vm[2];
+    expect(out).toBeCloseTo(0, 9); // no energy leaves this step
+    expect(Math.hypot(...r.fm)).toBeLessThanOrEqual(Math.hypot(...fRef) + 1e-9); // bounded force
+    const fc: Vec3 = [60, -10, 5];
+    const s = slavePc(fc, [0.2, 0.01, 0], 0, 50, dt);
+    expect(fc[0] * s.vd[0] + fc[1] * s.vd[1] + fc[2] * s.vd[2]).toBeCloseTo(0, 9);
+    expect(Math.hypot(...s.vd)).toBeLessThanOrEqual(Math.hypot(0.2, 0.01, 0) + 1e-9);
+  });
+
   it('drift compensation never spends more than its share of the surplus', () => {
     const fc: Vec3 = [20, 0, 0];
     const v = budgetedDrift(fc, [0.05, 0, 0], 4, 1e-4, 0.5, dt);
