@@ -89,6 +89,26 @@ export class MasterSim {
     this.mode = mode;
   }
 
+  /**
+   * New epoch after a mode switch (see SlaveSim.rebaseEnergy): the port counters restart from
+   * zero, and so do the slave's counters as they will be reported in new-epoch STATEs.
+   */
+  rebaseEnergy(): void {
+    this.energy.reset();
+    this.feedback = { ...this.feedback, eIn: 0, eOut: 0, us: [0, 0, 0] };
+    this.usBudget = 0;
+  }
+
+  /** E_S^in received from the slave (current epoch). */
+  private get eInRel(): number {
+    return this.feedback.eIn;
+  }
+
+  /** E_M^out (current epoch). */
+  private get eOutRel(): number {
+    return this.energy.out;
+  }
+
   /** Apply the content of a newer STATE. */
   receiveFeedback(fb: MasterFeedback): void {
     this.feedback = { fc: [...fb.fc], bMaster: fb.bMaster, eIn: fb.eIn, eOut: fb.eOut, us: [...fb.us] };
@@ -116,16 +136,16 @@ export class MasterSim {
       this.um = um;
       for (let i = 0; i < 3; i++) this.umSum[i] += um[i];
       this.umCount++;
-      this.observer = fb.eIn - this.energy.out;
+      this.observer = this.eInRel - this.eOutRel;
     } else if (this.mode === 'tdpa') {
-      const r = masterPc([-fb.fc[0], -fb.fc[1], -fb.fc[2]], this.vm, fb.eIn, this.energy.out, dt);
+      const r = masterPc([-fb.fc[0], -fb.fc[1], -fb.fc[2]], this.vm, this.eInRel, this.eOutRel, dt);
       fm = r.fm;
       this.eDiss += r.dissipated;
       this.observer = r.observer;
       this.pcAlpha = r.alpha;
     } else {
       fm = [-fb.fc[0], -fb.fc[1], -fb.fc[2]];
-      this.observer = fb.eIn - this.energy.out;
+      this.observer = this.eInRel - this.eOutRel;
     }
     this.fm = fm;
     this.energy.add(-dot3(fm, this.vm), dt);

@@ -471,6 +471,14 @@ export class Session {
     if (m.kind === 'reset') {
       const epoch = Number(m.data.epoch) || 1;
       this.epoch = epoch;
+      if (m.data.rebase) {
+        // control-mode switch: keep the arm where it is, restart the energy counters
+        this.master.rebaseEnergy();
+        this.energySeries.clear();
+        this.events.push({ t, kind: 'mode', data: { mode: this.ctrlcfg.mode } });
+        this.notify();
+        return;
+      }
       if (!m.data.join) {
         this.master.reset();
         this.sentCmds.length = 0;

@@ -133,6 +133,32 @@ export class SlaveSim {
     // CONTROL.md §5.4: a mode switch starts a new condition -> reset the slew-limiter state
     this.damping.reset();
     this.b = this.damping.b;
+    this.rebaseEnergy();
+  }
+
+  /**
+   * Restart the observers' energy balance from "now" (CONTROL.md §4.2): a previous mode may have
+   * left the channel with a large deficit (e.g., "none" generating energy), which TDPA would
+   * otherwise try to repay with a violent velocity correction. Energy in flight is ignored,
+   * which is conservative.
+   */
+  rebaseEnergy(): void {
+    // Both ends restart their port counters from zero in the new epoch (the hub / teleop bump the
+    // epoch and drop old-epoch CMD/STATE), so the counters stay comparable. Until the first
+    // new-epoch CMD arrives, hold the last commanded position with no energy allowance.
+    this.energy.reset();
+    this.cmd = { ...this.cmd, vm: [0, 0, 0], um: [0, 0, 0], eIn: 0, eOut: 0 };
+    this.umBudget = 0;
+  }
+
+  /** E_M^in received from the master (current epoch). */
+  private get eInRel(): number {
+    return this.cmd.eIn;
+  }
+
+  /** E_S^out (current epoch). */
+  private get eOutRel(): number {
+    return this.energy.out;
   }
 
   /** Accept a command if it is newer than the one in use. */
@@ -181,7 +207,7 @@ export class SlaveSim {
         const target = c.xm[i] + c.vm[i] * hold;
         vd[i] = c.vm[i] + (target - this.xd[i]) / period;
       }
-      this.observer = c.eIn - this.energy.out - Math.max(0, dot3(fc, vd)) * dt;
+      this.observer = this.eInRel - this.eOutRel - Math.max(0, dot3(fc, vd)) * dt;
     } else {
       let vRef: Vec3;
       if (this.mode === 'wave') {
@@ -197,7 +223,7 @@ export class SlaveSim {
         vRef = [c.vm[0], c.vm[1], c.vm[2]];
       }
       // drift compensation within the energy budget of the observer
-      const surplus = c.eIn - this.energy.out - Math.max(0, dot3(fc, vRef)) * dt;
+      const surplus = this.eInRel - this.eOutRel - Math.max(0, dot3(fc, vRef)) * dt;
       const drift = budgetedDrift(
         fc,
         [c.xm[0] - this.xd[0], c.xm[1] - this.xd[1], c.xm[2] - this.xd[2]],
@@ -208,14 +234,14 @@ export class SlaveSim {
       );
       vRef = [vRef[0] + drift[0], vRef[1] + drift[1], vRef[2] + drift[2]];
       if (this.mode === 'tdpa') {
-        const r = slavePc(fc, vRef, c.eIn, this.energy.out, dt);
+        const r = slavePc(fc, vRef, this.eInRel, this.eOutRel, dt);
         vd = r.vd;
         this.eDiss += r.dissipated;
         this.pcPower = r.dissipated / dt;
         this.observer = r.observer;
       } else {
         vd = vRef;
-        this.observer = c.eIn - this.energy.out - Math.max(0, dot3(fc, vd)) * dt;
+        this.observer = this.eInRel - this.eOutRel - Math.max(0, dot3(fc, vd)) * dt;
       }
     }
     for (let i = 0; i < 3; i++) this.xd[i] += vd[i] * dt;

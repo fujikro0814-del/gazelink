@@ -345,8 +345,16 @@ export class Hub {
         return;
       case 'CTRLCFG':
         if (!isOp) return this.error(peer, 'forbidden', '観戦者は設定を変更できません');
-        room.applyCtrl({ mode: m.mode, waveImpedance: m.waveImpedance, gaze: m.gaze });
-        this.broadcast(room, { t: 'CTRLCFG', ...room.ctrlcfg });
+        {
+          const modeChanged = m.mode !== room.ctrlcfg.mode;
+          room.applyCtrl({ mode: m.mode, waveImpedance: m.waveImpedance, gaze: m.gaze });
+          this.broadcast(room, { t: 'CTRLCFG', ...room.ctrlcfg });
+          if (modeChanged) {
+            // a new control mode is a new epoch: both ends restart their energy counters
+            room.epoch = (room.epoch + 1) & 0xffff || 1;
+            this.broadcast(room, { t: 'EVENT', kind: 'reset', data: { epoch: room.epoch, rebase: true } });
+          }
+        }
         return;
       case 'RESET':
         if (!isOp) return this.error(peer, 'forbidden', '観戦者は初期化できません');

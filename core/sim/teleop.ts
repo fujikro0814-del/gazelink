@@ -16,9 +16,10 @@ export interface TeleopOptions {
   seed?: number;
 }
 
-type CmdPacket = Omit<SlaveCommand, 'recvTime'>;
+type CmdPacket = Omit<SlaveCommand, 'recvTime'> & { epoch: number };
 interface StatePacket extends MasterFeedback {
   seq: number;
+  epoch: number;
 }
 
 export class OfflineTeleop {
@@ -30,6 +31,8 @@ export class OfflineTeleop {
   private cmdSeq = 0;
   private stateSeq = 0;
   private lastStateSeq = 0;
+  /** trial epoch, as in the networked protocol (CMD/STATE from another epoch are dropped) */
+  private epoch = 1;
   private readonly commEvery = Math.round(1 / (COMM.controlRateHz * PHYSICS.dt));
 
   constructor(opts: TeleopOptions) {
@@ -57,12 +60,20 @@ export class OfflineTeleop {
     this.slave.receiveGaze(p, conf, this.t);
   }
 
+  /** Switch the control mode mid-trial; like the hub, this starts a new epoch. */
+  switchMode(mode: ControlMode): void {
+    this.slave.setMode(mode);
+    this.master.setMode(mode);
+    this.master.rebaseEnergy();
+    this.epoch++;
+  }
+
   step(): void {
     const dt = PHYSICS.dt;
     const nowMs = this.k * dt * 1000;
-    for (const c of this.up.poll(nowMs)) this.slave.receiveCommand(c, this.t);
+    for (const c of this.up.poll(nowMs)) if (c.epoch === this.epoch) this.slave.receiveCommand(c, this.t);
     for (const s of this.down.poll(nowMs)) {
-      if (s.seq > this.lastStateSeq) {
+      if (s.epoch === this.epoch && s.seq > this.lastStateSeq) {
         this.lastStateSeq = s.seq;
         this.master.receiveFeedback(s);
       }
@@ -72,10 +83,23 @@ export class OfflineTeleop {
     this.k++;
     if (this.k % this.commEvery === 0) {
       const m = this.master.command();
-      this.up.submit({ seq: ++this.cmdSeq, xm: m.xm, vm: m.vm, eIn: m.eIn, eOut: m.eOut, um: m.um }, nowMs, 'CMD', true);
+      this.up.submit(
+        { seq: ++this.cmdSeq, epoch: this.epoch, xm: m.xm, vm: m.vm, eIn: m.eIn, eOut: m.eOut, um: m.um },
+        nowMs,
+        'CMD',
+        true,
+      );
       const s = this.slave;
       this.down.submit(
-        { seq: ++this.stateSeq, fc: [...s.fc], bMaster: s.bMaster, eIn: s.energy.in, eOut: s.energy.out, us: s.takeWaveOut() },
+        {
+          seq: ++this.stateSeq,
+          epoch: this.epoch,
+          fc: [...s.fc],
+          bMaster: s.bMaster,
+          eIn: s.energy.in,
+          eOut: s.energy.out,
+          us: s.takeWaveOut(),
+        },
         nowMs,
         'STATE',
         true,
