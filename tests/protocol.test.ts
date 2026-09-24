@@ -31,6 +31,12 @@ const samples: Msg[] = [
   { t: 'CTRLCFG', seq: 2, ts: 1, ...defaultCtrlConfig() },
   { t: 'RESET', seq: 4, ts: 2 },
   { t: 'EVENT', seq: 8, ts: 3, kind: 'contact_start', data: { surface: 'wall', force: 12.3 } },
+  {
+    t: 'STATS', seq: 3, ts: 4,
+    up: { CMD: { received: 95, lost: 5, late: 1, duplicate: 0, rateHz: 99, jitterMs: 1.5, owdHist: [0, 3, 90] } },
+    degrader: { appliedDelayHist: [0, 0, 100], dropped: 5, passed: 95, burstHist: [0, 3, 1] },
+    sim: { stepHz: 1000, periodJitterMs: 0.8, maxBacklogSteps: 12, meanWakeMs: 1.2 },
+  },
   { t: 'PING', seq: 11, ts: 4.5 },
   { t: 'PONG', seq: 12, ts: 5.5, echoSeq: 11, echoTs: 4.5 },
   { t: 'ERROR', seq: 1, ts: 0, code: 'no_such_room', message: '部屋 ABCD は存在しません' },

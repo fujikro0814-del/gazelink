@@ -213,6 +213,8 @@ export function SceneView({ session, options, interactive }: Props) {
       const h = host.clientHeight;
       renderer.setSize(w, h, false);
       camera.aspect = w / Math.max(h, 1);
+      // portrait screens (phones): widen the vertical field of view so the whole arm fits
+      camera.fov = camera.aspect < 1 ? Math.min(85, 40 / camera.aspect) : 40;
       camera.updateProjectionMatrix();
     };
     const ro = new ResizeObserver(resize);

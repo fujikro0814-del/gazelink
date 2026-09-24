@@ -867,3 +867,23 @@ table.bytype td {
   fill: #8593a3;
   font-size: 11px;
 }
+
+/* ---------- phones: spectator view only (scene + key readouts) ---------- */
+@media (max-width: 820px) {
+  .panel,
+  .charts,
+  .tabs,
+  .hint,
+  .chip.muted {
+    display: none;
+  }
+
+  .topbar {
+    gap: 6px;
+    padding: 6px 10px;
+  }
+
+  .lobby {
+    padding: 24px 16px;
+  }
+}
