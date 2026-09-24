@@ -116,12 +116,17 @@ export class MasterSim {
   }
 
   step(dt: number): void {
-    // hand: first-order filter of the raw target gives a smooth position and velocity
+    // hand: first-order filter of the raw target with a human-like speed limit, so a jump of the
+    // cursor (or a scripted teleport) becomes a fast but physically plausible hand motion
     const kf = Math.min(1, dt / HAND_FILTER_TAU);
+    const step: Vec3 = [0, 0, 0];
+    for (let i = 0; i < 3; i++) step[i] = (this.handTarget[i] - this.xh[i]) * kf;
+    const len = Math.hypot(step[0], step[1], step[2]);
+    const maxLen = MASTER.handMaxSpeed * dt;
+    const s = len > maxLen ? maxLen / len : 1;
     for (let i = 0; i < 3; i++) {
-      const nx = this.xh[i] + (this.handTarget[i] - this.xh[i]) * kf;
-      this.vh[i] = (nx - this.xh[i]) / dt;
-      this.xh[i] = nx;
+      this.vh[i] = (step[i] * s) / dt;
+      this.xh[i] += step[i] * s;
     }
 
     const fb = this.feedback;

@@ -32,6 +32,8 @@ export const MASTER = {
    */
   handK: 300,
   handB: 60,
+  /** Upper bound of the hand speed after filtering the raw target [m/s]. */
+  handMaxSpeed: 1.5,
 } as const;
 
 export const SLAVE = {

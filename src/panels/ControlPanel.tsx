@@ -131,6 +131,34 @@ export function ControlPanel({ session, sceneOptions, onSceneOptions }: Props) {
 
       <section>
         <h3>視線適応ダンピング</h3>
+        <div className="live">
+          <div>
+            <span className="k">b(t)</span>
+            <span className="v gaze">{fmt(s.state?.b, 1)}</span>
+            <span className="u">Ns/m</span>
+          </div>
+          <div>
+            <span className="k">先端の注意</span>
+            <span className="v">{fmt(s.state?.attention, 2)}</span>
+          </div>
+          <div>
+            <span className="k">壁まで</span>
+            <span className="v">{s.state ? fmt(Math.min(99, s.state.obstacle * 100), 1) : '—'}</span>
+            <span className="u">cm</span>
+          </div>
+        </div>
+        <div className="gaze-source">
+          視線の出どころ：
+          {isOp
+            ? s.gaze
+              ? 'マウスカーソル（カメラなしの代用）'
+              : 'まだありません（ボタンを押さずに 3D 画面の上でマウスを動かしてください）'
+            : s.remoteGaze
+              ? s.remoteGaze.src === 0
+                ? '操作者のカメラ'
+                : '操作者のマウス（代用）'
+              : '操作者の視線を待っています'}
+        </div>
         <Check label="有効にする" checked={ctrl.gaze.enabled} disabled={ro} onChange={(v) => updGaze({ enabled: v })} />
         <div className="segmented small">
           <button className={ctrl.gaze.target === 'master' ? 'on' : ''} disabled={ro} onClick={() => updGaze({ target: 'master' })}>
@@ -169,7 +197,9 @@ export function ControlPanel({ session, sceneOptions, onSceneOptions }: Props) {
             <tr><th>揺らぎ（RFC 3550）上り / 下り</th><td>{fmt(up?.jitterMs, 2)} / {fmt(down?.jitterMs, 2)} ms</td></tr>
             <tr><th>損失率 上り / 下り</th><td>{up ? fmt((100 * up.lost) / Math.max(1, up.lost + up.received), 1) : '—'} / {down ? fmt(100 * down.lossRatio, 1) : '—'} %</td></tr>
             <tr><th>受信頻度 STATE</th><td>{down ? down.rateHz(performance.timeOrigin + performance.now()) : '—'} Hz</td></tr>
-            <tr><th>主側の物理（目標 1000）</th><td>{s.loopStats.stepsPerSec} 刻み/s・起床 {fmt(s.loopStats.wakeMeanMs, 2)}±{fmt(s.loopStats.wakeJitterMs, 2)} ms</td></tr>
+            {isOp && (
+              <tr><th>主側の物理（目標 1000）</th><td>{s.loopStats.stepsPerSec} 刻み/s・起床 {fmt(s.loopStats.wakeMeanMs, 2)}±{fmt(s.loopStats.wakeJitterMs, 2)} ms</td></tr>
+            )}
             <tr><th>従側の物理（サーバ）</th><td>{s.stats ? `${s.stats.sim.stepHz} 刻み/s・起床 ${fmt(s.stats.sim.meanWakeMs, 2)}±${fmt(s.stats.sim.periodJitterMs, 2)} ms` : '—'}</td></tr>
           </tbody>
         </table>

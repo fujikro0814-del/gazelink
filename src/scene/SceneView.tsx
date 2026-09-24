@@ -63,6 +63,12 @@ export function SceneView({ session, options, interactive }: Props) {
     scene.add(root);
     root.updateMatrixWorld(true);
 
+    // debugging / e2e helper: normalized screen position of a robot-frame point
+    (window as unknown as { __gazeProject: (p: Vec3) => [number, number] }).__gazeProject = (p) => {
+      const v = root.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).project(camera);
+      return [(v.x + 1) / 2, (1 - v.y) / 2];
+    };
+
     const world = buildWorld(DEFAULT_ENV);
     root.add(world.group);
     const heat = new AttentionMap();
