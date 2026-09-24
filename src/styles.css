@@ -413,3 +413,228 @@ table.readout td {
   font-variant-numeric: tabular-nums;
   padding: 2px 0;
 }
+
+/* ---------- charts ---------- */
+.charts {
+  flex: none;
+  height: 190px;
+  display: flex;
+  gap: 6px;
+  padding: 4px 6px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.chart-cell {
+  flex: 1;
+  min-width: 0;
+}
+
+.uplot {
+  font-family: inherit;
+  color: var(--text);
+}
+
+.uplot .u-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: left;
+  padding-left: 44px;
+}
+
+.uplot .u-legend {
+  font-size: 10.5px;
+  text-align: left;
+  padding-left: 40px;
+  line-height: 1.2;
+}
+
+.uplot .u-legend .u-series > * {
+  padding: 0 2px;
+}
+
+.uplot .u-legend .u-value {
+  display: none;
+}
+
+/* ---------- protocol view ---------- */
+.protocol {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 10px;
+  padding: 8px 10px;
+  overflow: hidden;
+}
+
+.proto-left {
+  flex: 1.1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.proto-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.proto-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.msglist {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.msglist table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.msglist th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-weight: normal;
+  text-align: left;
+  padding: 3px 6px;
+}
+
+.msglist td {
+  padding: 2px 6px;
+  border-top: 1px solid #1c232c;
+  white-space: nowrap;
+}
+
+.msglist tr {
+  cursor: pointer;
+}
+
+.msglist tr.sel td {
+  background: #1f3446;
+}
+
+.msglist .type {
+  font-family: Consolas, monospace;
+  font-weight: 600;
+}
+
+.msglist td.warn {
+  color: var(--warn);
+}
+
+.msgdetail {
+  flex: none;
+  height: 190px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 8px;
+  overflow: auto;
+  font-size: 11.5px;
+}
+
+.detail-head {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.detail-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.detail-body pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font: 11px/1.45 Consolas, 'Courier New', monospace;
+}
+
+.detail-body .hex {
+  color: #9fd3ff;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+canvas.seqdiag {
+  width: 100%;
+  height: 300px;
+  flex: none;
+  background: #0f141b;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.hists {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.hist {
+  background: #0f141b;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 6px;
+}
+
+.hist-title {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text);
+}
+
+.hist-legend {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.hist-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 8px;
+  margin: 0 3px 0 8px;
+  vertical-align: middle;
+}
+
+.hist-legend i.line {
+  height: 2px;
+  background: #ffc857;
+}
+
+.hist canvas {
+  width: 100%;
+  height: 110px;
+  display: block;
+}
+
+.hist-note {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+table.bytype th,
+table.bytype td {
+  padding: 1px 6px;
+}

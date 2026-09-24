@@ -143,6 +143,14 @@ export class Degrader<T> {
     return this.queue.length;
   }
 
+  /** Forget the observation histograms (e.g., after the settings changed). */
+  resetStats(): void {
+    this.appliedDelayHist.fill(0);
+    this.burstHist.fill(0);
+    this.dropped = 0;
+    this.passed = 0;
+  }
+
   clear(): void {
     this.queue = [];
   }

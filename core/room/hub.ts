@@ -334,7 +334,13 @@ export class Hub {
       case 'NETCFG':
         if (!isOp) return this.error(peer, 'forbidden', '観戦者は設定を変更できません');
         room.netcfg = { up: { ...m.up }, down: { ...m.down }, seed: m.seed };
-        for (const p of room.peers) p.applyNet(room.netcfg);
+        for (const p of room.peers) {
+          p.applyNet(room.netcfg);
+          // a new setting starts a new measurement, so histograms compare like with like
+          p.up.resetStats();
+          p.down.resetStats();
+          p.meters.clear();
+        }
         this.broadcast(room, { t: 'NETCFG', up: room.netcfg.up, down: room.netcfg.down, seed: room.netcfg.seed });
         return;
       case 'CTRLCFG':

@@ -413,6 +413,9 @@ export class Session {
         return;
       case 'NETCFG':
         this.netcfg = { up: m.up, down: m.down, seed: m.seed };
+        // the hub restarted its measurements too; start ours over so both compare the new setting
+        this.meters.clear();
+        this.stats = null;
         this.notify();
         return;
       case 'CTRLCFG':

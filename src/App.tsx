@@ -3,6 +3,8 @@ import { SceneView, type SceneOptions } from './scene/SceneView.tsx';
 import { runProbe, type ProbeResult, type ProbeState } from './diag/probe.ts';
 import { Session } from './session/Session.ts';
 import { ControlPanel } from './panels/ControlPanel.tsx';
+import { Charts } from './panels/Charts.tsx';
+import { ProtocolView } from './panels/ProtocolView.tsx';
 import { TRANSPORT_LABEL } from './transport/auto.ts';
 import { useSession } from './hooks.ts';
 
@@ -162,9 +164,11 @@ export function App() {
               左ドラッグ：手を動かす　ホイール／Q・E：高さ　W・A・S・D：水平移動　右ドラッグ：視点　ボタンを押さずに動かす：視線
             </div>
           )}
+          <Charts session={session} />
         </div>
         {tab === 'operate' && <ControlPanel session={session} sceneOptions={sceneOptions} onSceneOptions={setSceneOptions} />}
-        {tab !== 'operate' && <div className="placeholder">準備中</div>}
+        {tab === 'protocol' && <ProtocolView session={session} />}
+        {(tab === 'experiment' || tab === 'about') && <div className="placeholder">準備中</div>}
       </main>
     </div>
   );
