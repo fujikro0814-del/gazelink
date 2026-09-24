@@ -24,9 +24,9 @@ function materials(style: ArmStyle) {
       depthWrite: false,
       roughness: 0.6,
       emissive: color,
-      emissiveIntensity: 0.25,
+      emissiveIntensity: 0.45,
     });
-  return { shell: mk(0.18), joint: mk(0.3), accent: mk(0.22) };
+  return { shell: mk(0.3), joint: mk(0.45), accent: mk(0.35) };
 }
 
 export class PandaModel {

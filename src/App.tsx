@@ -5,6 +5,8 @@ import { Session } from './session/Session.ts';
 import { ControlPanel } from './panels/ControlPanel.tsx';
 import { Charts } from './panels/Charts.tsx';
 import { ProtocolView } from './panels/ProtocolView.tsx';
+import { ExperimentView } from './panels/ExperimentView.tsx';
+import { AboutView } from './panels/AboutView.tsx';
 import { TRANSPORT_LABEL } from './transport/auto.ts';
 import { useSession } from './hooks.ts';
 
@@ -174,7 +176,8 @@ export function App() {
         </div>
         {tab === 'operate' && <ControlPanel session={session} sceneOptions={sceneOptions} onSceneOptions={setSceneOptions} />}
         {tab === 'protocol' && <ProtocolView session={session} />}
-        {(tab === 'experiment' || tab === 'about') && <div className="placeholder">準備中</div>}
+        {tab === 'experiment' && <ExperimentView />}
+        {tab === 'about' && <AboutView />}
       </main>
     </div>
   );
