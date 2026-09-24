@@ -105,9 +105,12 @@ export function contactForce(p: Vec3, v: Vec3, env: Environment = DEFAULT_ENV): 
   return { force, flags, depth };
 }
 
-/** Distance from p to the nearest obstacle (the wall and the table; the target is not an obstacle). */
+/**
+ * Distance from p to the nearest obstacle for the damping law. Only the wall counts: the target
+ * sits on the table, so treating the table as an obstacle would make the target area heavy.
+ */
 export function obstacleDistance(p: Vec3, env: Environment = DEFAULT_ENV): number {
-  return Math.min(boxDistance(p, env.wall), Math.max(0, p[2] - env.floorZ));
+  return boxDistance(p, env.wall);
 }
 
 /** True if the segment prev -> cur passes through the ring disk (in either direction). */

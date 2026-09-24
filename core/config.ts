@@ -26,9 +26,12 @@ export const COMM = {
 export const MASTER = {
   /** Virtual mass of the local (master) device [kg]. */
   mass: 0.5,
-  /** Spring / damper coupling the operator's hand (mouse) to the master mass. */
+  /**
+   * Spring / damper coupling the operator's hand (mouse) to the master mass.
+   * handB is deliberately high (overdamped): see docs/CONTROL.md §2.1 for the delay-margin estimate.
+   */
   handK: 300,
-  handB: 8,
+  handB: 60,
 } as const;
 
 export const SLAVE = {
