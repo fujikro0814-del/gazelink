@@ -108,8 +108,10 @@ async function main(): Promise<void> {
   }
 
   const server = http.createServer(app);
-  const wss = new WebSocketServer({ server, path: '/ws' });
-  wss.on('connection', (ws) => {
+  // GAZELINK_DISABLE_WS=1 simulates a host without WebSocket support (tests the SSE fallback)
+  const wss = process.env.GAZELINK_DISABLE_WS === '1' ? null : new WebSocketServer({ server, path: '/ws' });
+  if (!wss) console.log('[gazelink] WebSocket disabled (GAZELINK_DISABLE_WS=1)');
+  wss?.on('connection', (ws) => {
     ws.binaryType = 'nodebuffer';
     let conn: ReturnType<Hub['connect']> | null = null;
     ws.on('message', (data, isBinary) => {

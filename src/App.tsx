@@ -88,6 +88,7 @@ function Lobby({ session, probe }: { session: Session; probe: ProbeResult | null
 function TopBar({ session, tab, setTab }: { session: Session; tab: Tab; setTab: (t: Tab) => void }) {
   useSession(session, 2);
   const s = session;
+  s.updateLoopStats();
   const share = (() => {
     try {
       const u = new URL(location.href);
@@ -114,6 +115,11 @@ function TopBar({ session, tab, setTab }: { session: Session; tab: Tab; setTab: 
       <span className="chip">{s.role === 'operator' ? '操作者' : '観戦者'}</span>
       <span className="chip">{s.transportKind ? TRANSPORT_LABEL[s.transportKind] : '—'}</span>
       {s.role === 'operator' && <span className="chip muted">視線：マウスで代用（ボタンを押さずに動かす）</span>}
+      {s.role === 'operator' && s.phase === 'joined' && s.loopStats.wakeMeanMs > 20 && (
+        <span className="banner warn" title="画面の描画が重く、手元の 1 kHz 物理がまとめて進んでいます。ブラウザのハードウェアアクセラレーションを有効にするか、ウィンドウを小さくしてください。">
+          描画が重く、手元の物理が乱れています（{s.loopStats.wakeMeanMs.toFixed(0)} ms おき）
+        </span>
+      )}
       {s.phase === 'reconnecting' && <span className="banner bad">再接続中…（{s.errorText}）</span>}
       {s.phase === 'error' && <span className="banner bad">{s.errorText}</span>}
       <span className="spacer" />

@@ -10,7 +10,9 @@ if (!script) {
   process.exit(2);
 }
 const base = `http://localhost:${port}`;
-const server = spawn(process.execPath, ['dist/server.mjs'], {
+// GAZELINK_STATIC=1 serves only the static client (no API) to test the Worker fallback
+const serverArgs = process.env.GAZELINK_STATIC === '1' ? ['scripts/static-server.mjs', port] : ['dist/server.mjs'];
+const server = spawn(process.execPath, serverArgs, {
   env: { ...process.env, PORT: port },
   stdio: ['ignore', 'inherit', 'inherit'],
 });
@@ -18,8 +20,8 @@ const server = spawn(process.execPath, ['dist/server.mjs'], {
 async function waitReady() {
   for (let i = 0; i < 100; i++) {
     try {
-      const r = await fetch(`${base}/api/health`);
-      if (r.ok) return;
+      await fetch(`${base}/`);
+      return;
     } catch {
       /* not up yet */
     }
