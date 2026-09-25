@@ -36,6 +36,19 @@ export const MASTER = {
   handMaxSpeed: 1.5,
 } as const;
 
+export const JOG = {
+  /** Keyboard hand speed [m/s] and the factor applied while Shift is held (precision mode). */
+  speed: 0.2,
+  slowFactor: 0.25,
+  /**
+   * Time constant of the first-order velocity filter [s]: speed rises / falls smoothly instead
+   * of stepping (10-90 % in about 2.2 tau = 0.13 s).
+   */
+  tau: 0.06,
+  /** Below this speed with no key held, the hand stops completely [m/s]. */
+  stopSpeed: 1e-4,
+} as const;
+
 export const SLAVE = {
   /** Virtual mass of the remote (slave) tip [kg]. */
   mass: 2.0,

@@ -116,7 +116,7 @@ function TopBar({ session, tab, setTab }: { session: Session; tab: Tab; setTab: 
       )}
       <span className="chip">{s.role === 'operator' ? '操作者' : '観戦者'}</span>
       <span className="chip">{s.transportKind ? TRANSPORT_LABEL[s.transportKind] : '—'}</span>
-      {s.role === 'operator' && <span className="chip muted">視線：マウスで代用（ボタンを押さずに動かす）</span>}
+      {s.role === 'operator' && <span className="chip muted">視線：マウスで代用（手はキーボード）</span>}
       {s.role === 'operator' && s.phase === 'joined' && s.loopStats.wakeMeanMs > 20 && (
         <span className="banner warn" title="画面の描画が重く、手元の 1 kHz 物理がまとめて進んでいます。ブラウザのハードウェアアクセラレーションを有効にするか、ウィンドウを小さくしてください。">
           描画が重く、手元の物理が乱れています（{s.loopStats.wakeMeanMs.toFixed(0)} ms おき）
@@ -169,7 +169,7 @@ export function App() {
           <SceneView session={session} options={sceneOptions} interactive={session.role === 'operator'} />
           {session.role === 'operator' && (
             <div className="hint">
-              左ドラッグ：手を動かす　ホイール／Q・E：高さ　W・A・S・D：水平移動　右ドラッグ：視点　ボタンを押さずに動かす：視線
+              W・A・S・D：手を水平移動（視点基準）　Q・E：上下　Shift：低速　マウス：視線　右ドラッグ：視点　ホイール：拡大縮小
             </div>
           )}
           <Charts session={session} />

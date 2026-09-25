@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ENV } from '../../core/config.ts';
@@ -11,6 +11,7 @@ import { PandaModel } from './panda.ts';
 import { buildWorld } from './world.ts';
 import { AttentionMap } from './attentionMap.ts';
 import { predictSlave } from './predict.ts';
+import { HandJog, JOG_CODES, noKeys, type JogKeys } from './jog.ts';
 
 export interface SceneOptions {
   showGhost: boolean;
@@ -28,6 +29,8 @@ const clampV = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, 
 
 export function SceneView({ session, options, interactive }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const [focused, setFocused] = useState(false);
+  const [viewDrag, setViewDrag] = useState(false);
   const optsRef = useRef(options);
   optsRef.current = options;
   const interactiveRef = useRef(interactive);
@@ -48,10 +51,14 @@ export function SceneView({ session, options, interactive }: Props) {
     camera.position.set(-0.35, 1.25, 1.75);
     const controls = new OrbitControls(camera, canvas);
     controls.target.set(0.42, 0.2, 0);
-    // left button moves the hand; right button orbits; middle pans
+    // left button: nothing (the mouse is the gaze); right orbits, middle pans, wheel zooms
     controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
-    controls.enableZoom = false;
+    controls.enableZoom = true;
+    controls.minDistance = 0.5;
+    controls.maxDistance = 5;
     controls.update();
+    // debugging / e2e helper: distance of the camera from its orbit target
+    (window as unknown as { __gazeViewDistance: () => number }).__gazeViewDistance = () => camera.position.distanceTo(controls.target);
 
     scene.add(new THREE.HemisphereLight(0xdde6f0, 0x1a2028, 1.1));
     const sun = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -110,30 +117,25 @@ export function SceneView({ session, options, interactive }: Props) {
     root.add(forceArrow);
 
     // ---------------------------------------------------------------- input
+    // Mouse = gaze only (hover); right drag orbits, middle drag pans, wheel zooms.
+    // The hand is driven by the keyboard (W/A/S/D horizontal relative to the view, Q/E vertical,
+    // Shift = slow) with smoothly ramped velocity (see jog.ts).
     const raycaster = new THREE.Raycaster();
     const ndc = new THREE.Vector2();
-    let handZ = session.master.home[2];
-    let dragging = false;
-    const keys = new Set<string>();
+    const keys: JogKeys = noKeys();
+    const jog = new HandJog();
+    let viewDrag = false;
 
     const toRobot = (p: THREE.Vector3): Vec3 => {
       const v = root.worldToLocal(p.clone());
       return [v.x, v.y, v.z];
     };
 
-    const setRay = (e: PointerEvent | WheelEvent) => {
+    const setRay = (e: PointerEvent) => {
       const r = canvas.getBoundingClientRect();
       ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       raycaster.setFromCamera(ndc, camera);
       return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height] as [number, number];
-    };
-
-    /** intersect the horizontal work plane z = handZ (robot frame) */
-    const planeHit = (): Vec3 | null => {
-      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -handZ); // three y == robot z
-      const p = new THREE.Vector3();
-      if (!raycaster.ray.intersectPlane(plane, p)) return null;
-      return toRobot(p);
     };
 
     const clampHand = (x: Vec3): Vec3 => [
@@ -159,54 +161,44 @@ export function SceneView({ session, options, interactive }: Props) {
     };
 
     const onPointerDown = (e: PointerEvent) => {
-      if (!interactiveRef.current || e.button !== 0) return;
-      canvas.focus();
-      dragging = true;
-      canvas.setPointerCapture(e.pointerId);
-      setRay(e);
-      const p = planeHit();
-      if (p) session.setHand(clampHand(p));
+      canvas.focus(); // any click gives the canvas the keyboard
+      if (e.button === 1 || e.button === 2) {
+        // viewpoint manipulation: freeze the gaze until the button is released
+        viewDrag = true;
+        setViewDrag(true);
+      }
     };
     const onPointerMove = (e: PointerEvent) => {
-      if (!interactiveRef.current) return;
-      const uv = setRay(e);
-      if (dragging) {
-        const p = planeHit();
-        if (p) session.setHand(clampHand(p));
-      } else {
-        // not dragging: the cursor stands in for the operator's gaze
-        updateGazeFromPointer(uv);
-      }
+      if (!interactiveRef.current || viewDrag) return;
+      // the cursor stands in for the operator's gaze
+      updateGazeFromPointer(setRay(e));
     };
-    const onPointerUp = (e: PointerEvent) => {
-      if (e.button !== 0) return;
-      dragging = false;
-      try {
-        canvas.releasePointerCapture(e.pointerId);
-      } catch {
-        /* ignore */
-      }
-    };
-    const onWheel = (e: WheelEvent) => {
-      if (!interactiveRef.current) return;
-      e.preventDefault();
-      handZ = clampV(handZ - Math.sign(e.deltaY) * 0.01, ENV.workspaceMin[2] + 0.005, ENV.workspaceMax[2]);
-      const h = session.master.handTarget;
-      session.setHand([h[0], h[1], handZ]);
+    const endViewDrag = (e: PointerEvent) => {
+      if (!viewDrag || (e.buttons & 6) !== 0) return; // still holding right/middle
+      viewDrag = false;
+      setViewDrag(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      const k = e.key.toLowerCase();
-      if (!['w', 'a', 's', 'd', 'q', 'e'].includes(k)) return;
-      if (e.type === 'keydown') keys.add(k);
-      else keys.delete(k);
+      const k = JOG_CODES[e.code];
+      if (!k || !interactiveRef.current) return;
+      e.preventDefault();
+      keys[k] = e.type === 'keydown';
+    };
+    const onFocus = () => setFocused(true);
+    const onBlur = () => {
+      setFocused(false);
+      // keys released while unfocused would otherwise stay "pressed"
+      Object.assign(keys, noKeys());
     };
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
-    canvas.addEventListener('pointerup', onPointerUp);
-    canvas.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('pointerup', endViewDrag);
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-    window.addEventListener('keydown', onKey);
-    window.addEventListener('keyup', onKey);
+    canvas.addEventListener('keydown', onKey);
+    canvas.addEventListener('keyup', onKey);
+    canvas.addEventListener('focus', onFocus);
+    canvas.addEventListener('blur', onBlur);
+    setFocused(document.activeElement === canvas);
 
     const resize = () => {
       const w = host.clientWidth;
@@ -233,26 +225,21 @@ export function SceneView({ session, options, interactive }: Props) {
       const opts = optsRef.current;
       const isOp = session.role === 'operator';
 
-      // keyboard hand motion (0.25 m/s)
-      if (isOp && interactiveRef.current && keys.size) {
-        const h = [...session.master.handTarget] as Vec3;
-        const v = 0.25 * dt;
-        // screen-relative: w/s along camera forward projected on the table, a/d sideways
+      // keyboard jogging with smoothly ramped velocity
+      if (isOp && interactiveRef.current) {
+        // view-relative horizontal direction: camera forward projected onto the table
         const fwd = new THREE.Vector3();
         camera.getWorldDirection(fwd);
         const f = toRobot(fwd.add(root.localToWorld(new THREE.Vector3())));
         const fl = Math.hypot(f[0], f[1]) || 1;
-        const fx = f[0] / fl;
-        const fy = f[1] / fl;
-        if (keys.has('w')) (h[0] += fx * v), (h[1] += fy * v);
-        if (keys.has('s')) (h[0] -= fx * v), (h[1] -= fy * v);
-        if (keys.has('d')) (h[0] += fy * v), (h[1] -= fx * v);
-        if (keys.has('a')) (h[0] -= fy * v), (h[1] += fx * v);
-        if (keys.has('q')) h[2] += v;
-        if (keys.has('e')) h[2] -= v;
-        const c = clampHand(h);
-        handZ = c[2];
-        session.setHand(c);
+        const d = jog.step(dt, keys, [f[0] / fl, f[1] / fl]);
+        if (Math.abs(d[0]) + Math.abs(d[1]) + Math.abs(d[2]) > 1e-7) {
+          const h = session.master.handTarget;
+          const want: Vec3 = [h[0] + d[0], h[1] + d[1], h[2] + d[2]];
+          const c = clampHand(want);
+          for (let i = 0; i < 3; i++) if (c[i] !== want[i]) jog.stopAxis(i);
+          session.setHand(c);
+        }
       }
 
       const st = session.state;
@@ -324,12 +311,16 @@ export function SceneView({ session, options, interactive }: Props) {
       cancelAnimationFrame(raf);
       ro.disconnect();
       controls.dispose();
-      window.removeEventListener('keydown', onKey);
-      window.removeEventListener('keyup', onKey);
+      window.removeEventListener('pointerup', endViewDrag);
       renderer.dispose();
       host.removeChild(canvas);
     };
   }, [session]);
 
-  return <div className="scene" ref={hostRef} />;
+  return (
+    <div className="scene" ref={hostRef}>
+      {interactive && !focused && <div className="scene-overlay focus">画面をクリックしてから操作（W・A・S・D・Q・E）</div>}
+      {viewDrag && <div className="scene-overlay view">視点操作中（視線の更新を停止）</div>}
+    </div>
+  );
 }

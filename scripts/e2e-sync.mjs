@@ -33,19 +33,18 @@ if (room) {
   console.log('spectator joined');
 }
 
-// drag the hand toward the wall across the canvas
+// focus the scene and jog the hand with the keyboard (W forward, D right)
 const canvas = op.locator('.scene canvas');
 const box = await canvas.boundingBox();
 const cx = box.x + box.width * 0.45;
 const cy = box.y + box.height * 0.45;
-await op.mouse.move(cx, cy);
-await op.mouse.down();
-for (let i = 0; i <= 30; i++) {
-  await op.mouse.move(cx + i * 6, cy - i * 2);
-  await op.waitForTimeout(30);
-}
-await op.mouse.up();
-// hover elsewhere: the cursor becomes the gaze point
+await op.mouse.click(cx, cy);
+await op.keyboard.down('KeyW');
+await op.keyboard.down('KeyD');
+await op.waitForTimeout(900);
+await op.keyboard.up('KeyD');
+await op.keyboard.up('KeyW');
+// the cursor is the gaze point
 await op.mouse.move(cx + 300, cy + 60);
 await op.waitForTimeout(1500);
 

@@ -887,3 +887,29 @@ table.bytype td {
     padding: 24px 16px;
   }
 }
+
+/* ---------- scene overlays ---------- */
+.scene-overlay {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.scene-overlay.focus {
+  top: 42%;
+  background: rgba(13, 17, 23, 0.85);
+  border: 1px solid var(--warn);
+  color: var(--warn);
+}
+
+.scene-overlay.view {
+  top: 40px;
+  background: rgba(79, 195, 247, 0.15);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}

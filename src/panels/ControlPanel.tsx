@@ -152,7 +152,7 @@ export function ControlPanel({ session, sceneOptions, onSceneOptions }: Props) {
           {isOp
             ? s.gaze
               ? 'マウスカーソル（カメラなしの代用）'
-              : 'まだありません（ボタンを押さずに 3D 画面の上でマウスを動かしてください）'
+              : 'まだありません（3D 画面の上でマウスを動かしてください）'
             : s.remoteGaze
               ? s.remoteGaze.src === 0
                 ? '操作者のカメラ'
